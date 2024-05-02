@@ -2,5 +2,5 @@
 
 
 void kentry(void) {
-
+    while (1);
 }
