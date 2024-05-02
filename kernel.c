@@ -5,5 +5,5 @@
 
 void kentry(void) {
     term_init();
-	//print("Hello, kernel World!");
+    print("Hello, kernel World!");
 }
