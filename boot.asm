@@ -25,7 +25,6 @@ _start:
     mov esp, stack_top ; Initialize the stack pointer to the stack top
 
     ; Pre-kernel initialization step
-
     extern kentry ; Declare the kernel's entry point as extern
     call kentry   ; Call into the kernel's entry point
 

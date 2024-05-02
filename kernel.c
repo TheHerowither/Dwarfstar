@@ -1,6 +1,9 @@
 #include "kutils/types.h"
+#include "drivers/vga.h"
+
 
 
 void kentry(void) {
-    while (1);
+    term_init();
+	//print("Hello, kernel World!");
 }

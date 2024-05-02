@@ -14,4 +14,4 @@ typedef uint8_t bool;
 #define true (1)
 #define false (0)
 
-typedef long unsigned int size_t;
+typedef unsigned long long int size_t;
