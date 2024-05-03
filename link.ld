@@ -6,6 +6,7 @@ SECTIONS {
     /*First add the multiboot header, then the code*/
     .text BLOCK(4K) : ALIGN(4K) {
         *(.multiboot)
+        *(.gdt)
         *(.text)
     }
 

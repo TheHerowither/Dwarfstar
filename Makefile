@@ -14,7 +14,7 @@ bootloader: boot.asm bin
 	nasm -felf32 boot.asm -o bin/boot.o
 
 run: dwarfstar
-	qemu-system-x86_64 -drive format=raw,file=dwarfstar.iso
+	qemu-system-i386 -drive format=raw,file=dwarfstar.iso
 
 bin:
 	mkdir $@
