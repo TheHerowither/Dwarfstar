@@ -14,8 +14,8 @@ enum vga_color {
     VGA_COLOR_RED = 4,
   	VGA_COLOR_MAGENTA = 5,
   	VGA_COLOR_BROWN = 6,
-  	VGA_COLOR_LIGHT_GREY = 7,
-  	VGA_COLOR_DARK_GREY = 8,
+  	VGA_COLOR_LIGHT_GRAY = 7,
+  	VGA_COLOR_DARK_GRAY = 8,
   	VGA_COLOR_LIGHT_BLUE = 9,
   	VGA_COLOR_LIGHT_GREEN = 10,
   	VGA_COLOR_LIGHT_CYAN = 11,
@@ -48,7 +48,7 @@ static const uint8_t VGA_HEIGHT = 25;
 
 uint8_t terminal_row    = 0;
 uint8_t terminal_column = 0;
-uint8_t terminal_color  = VGA_COLOR_WHITE | VGA_COLOR_BLUE << 4;
+uint8_t terminal_color  = VGA_COLOR_LIGHT_GRAY | VGA_COLOR_BLACK << 4;
 
 void term_init(void) {
     for (unsigned int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
@@ -56,14 +56,42 @@ void term_init(void) {
     }
 }
 
+int get_offset(int col, int row) {
+    return 2 * (row * VGA_WIDTH + col);
+}
+
+uint32_t strlen(const char *str) {
+    uint32_t len = 0;
+    while (*str != '\0') {
+        len++;
+        str++;
+    }
+    return len;
+}
+
 void print(const char *str) {
     uint32_t offset = vga_get_cursor();
-    while (*str) {
-        vga_ram[terminal_row * VGA_WIDTH + terminal_column++] = *str | terminal_color << 8;
-        str++;
-        offset += 2;
+    for (size_t i = 0; i < strlen(str); i++) {
+        switch (str[i]) {
+            case '\n':
+                terminal_row++;
+                terminal_column=0;
+                break;
+            case '\r':
+                terminal_column = 0;
+                offset = 0;
+                break;
+            case '\t':
+                terminal_column += 4;
+                offset+=(2*4);
+                break;
+            default:
+                vga_ram[terminal_row * VGA_WIDTH + terminal_column++] = str[i] | terminal_color << 8;
+                offset+=2;
+                break;
+        }
     }
-    vga_set_cursor(offset);
+    vga_set_cursor(get_offset(terminal_column, terminal_row));
 }
 
 uint8_t pinb(uint16_t port) {
