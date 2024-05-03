@@ -90,6 +90,10 @@ void print(const char *str) {
                 offset+=2;
                 break;
         }
+        if (terminal_column >= VGA_WIDTH - 1) {
+            terminal_column = 0;
+            terminal_row++;
+        }
     }
     vga_set_cursor(get_offset(terminal_column, terminal_row));
 }
