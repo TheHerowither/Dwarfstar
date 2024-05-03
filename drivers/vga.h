@@ -33,9 +33,11 @@ enum vga_color {
 uint16_t *const vga_ram = (uint16_t *const) 0xB8000;
 
 uint32_t strlen(const char *str);
+void strca(char *str1, const char *str2);
 
 void term_init(void);
 void print(const char *str);
+void printuint(const char *str, uint32_t i);
 
 uint8_t pinb(uint16_t port);
 void poutb(uint16_t port, uint8_t data);
@@ -69,6 +71,67 @@ uint32_t strlen(const char *str) {
     return len;
 }
 
+void strcat(char* str1, const char* str2)
+{
+    while (*str1) {
+        ++str1;
+    }
+    while (*str2) {
+        *str1++ = *str2++;
+    }
+    *str1 = '\0';
+}
+
+void printuint(const char *str, uint32_t n) {
+    char buf[50];
+    int i = 0;
+    if (n == 0) {
+        buf[0] = '0';
+        buf[1] = '\0';
+    }
+    else {
+
+        while (n!=0) {
+            buf[i++] = n%10+'0';
+            n = n/10;
+        }
+        buf[i++] = '\0';
+    }
+
+    char otp[1024] = "";
+    strcat(otp, str);
+    strcat(otp, buf);
+
+    for (int i = 0, j = strlen(otp) - 1; i <= j; i++, j--) {
+        char c = otp[i];
+        otp[i] = otp[j];
+        otp[j] = c;
+    }
+
+    print(otp);
+}
+
+void memcpy(char *source, char *dest, int nbytes) {
+    int i;
+    for (i = 0; i < nbytes; i++) {
+        *(dest + i) = *(source + i);
+    }
+}
+
+int scroll_ln(int offset) {
+    memcpy(
+            (char *) (get_offset(0, 1) + 0xB8000),
+            (char *) (get_offset(0, 0) + 0xB8000),
+            VGA_WIDTH * (VGA_HEIGHT - 1) * 2
+    );
+
+    for (int col = 0; col < VGA_WIDTH; col++) {
+        vga_ram[get_offset(col, VGA_HEIGHT - 1)] = ' ';
+    }
+
+    return offset - 2 * VGA_WIDTH;
+}
+
 void print(const char *str) {
     uint32_t offset = vga_get_cursor();
     for (size_t i = 0; i < strlen(str); i++) {
@@ -93,6 +156,10 @@ void print(const char *str) {
         if (terminal_column >= VGA_WIDTH - 1) {
             terminal_column = 0;
             terminal_row++;
+        }
+        if (terminal_row >= VGA_HEIGHT - 1) {
+            terminal_row--;
+            offset = scroll_ln(offset);
         }
     }
     vga_set_cursor(get_offset(terminal_column, terminal_row));
