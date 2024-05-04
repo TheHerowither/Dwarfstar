@@ -33,10 +33,11 @@ enum vga_color {
 uint16_t *const vga_ram = (uint16_t *const) 0xB8000;
 
 uint32_t strlen(const char *str);
-void strca(char *str1, const char *str2);
+void strcat(char *str1, const char *str2);
 
 void term_init(void);
 void print(const char *str);
+void print_char(char c);
 void printuint(const char *str, uint32_t i);
 
 uint8_t pinb(uint16_t port);
@@ -161,6 +162,37 @@ void print(const char *str) {
             terminal_row--;
             offset = scroll_ln(offset);
         }
+    }
+    vga_set_cursor(get_offset(terminal_column, terminal_row));
+}
+
+void print_char(char c) {
+    uint32_t offset = vga_get_cursor();
+    switch (c) {
+        case '\n':
+            terminal_row++;
+            terminal_column=0;
+            break;
+        case '\r':
+            terminal_column = 0;
+            offset = 0;
+            break;
+        case '\t':
+            terminal_column += 4;
+            offset+=(2*4);
+            break;
+        default:
+            vga_ram[terminal_row * VGA_WIDTH + terminal_column++] = c | terminal_color << 8;
+            offset+=2;
+            break;
+    }
+    if (terminal_column >= VGA_WIDTH - 1) {
+        terminal_column = 0;
+        terminal_row++;
+    }
+    if (terminal_row >= VGA_HEIGHT - 1) {
+        terminal_row--;
+        offset = scroll_ln(offset);
     }
     vga_set_cursor(get_offset(terminal_column, terminal_row));
 }

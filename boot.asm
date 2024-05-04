@@ -1,3 +1,4 @@
+%include "interrupt.asm"
 MBALIGN  equ 1<<0               ; Align loaded modules on page boundaries
 MEMINFO  equ 1<<1               ; Memory map
 MBFLAGS  equ MBALIGN | MEMINFO  ; Multiboot flag field
@@ -51,7 +52,6 @@ gdt_descriptor:
 
 CODE_SEG equ gdt_code - gdt_start
 DATA_SEG equ gdt_data - gdt_start
-
 load32:
     cli
     lgdt [gdt_descriptor]
@@ -80,6 +80,7 @@ run32:
 
     mov ebp, 0x90000        ; 6. setup stack
     mov esp, ebp
+
 
     extern kentry ; Declare the kernel's entry point as extern
     call kentry   ; Call into the kernel's entry point
