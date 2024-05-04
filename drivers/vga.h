@@ -223,5 +223,20 @@ uint32_t vga_get_cursor() {
     return offset * 2;
 }
 
+void vga_clear() {
+    for (uint32_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
+        vga_ram[i] = ' ' | terminal_color << 8;
+        terminal_row = 0;
+        terminal_column = 0;
+    }
+    vga_set_cursor(get_offset(0,0));
+}
+
+void vga_update_color() {
+    for (uint32_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
+        vga_ram[i] = (vga_ram[i] & 0xFF) | terminal_color << 8;
+    }
+}
+
 
 #endif // VGA_H

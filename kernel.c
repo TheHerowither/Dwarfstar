@@ -19,6 +19,8 @@ void kentry(void) {
     init_keyboard(IRQ1);
     print(" -> Initialized\n");
 
-    print("\nWelcome to Dwarfstar OS\n");
+    print("\n\n");
+    print(LOGO);
+    print("Welcome to Dwarfstar OS\n> ");
     while (1);
 }

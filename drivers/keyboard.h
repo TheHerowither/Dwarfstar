@@ -3,6 +3,14 @@
 #include "vga.h"
 #include "../cpu/irq_idt.h"
 
+// WIP
+const char *LOGO =
+"      \\  |  / \n"
+"        ***    \n"
+"     - *   * - \n"
+"        ***    \n"
+"      /  |  \\ \n";
+
 char print_letter(uint8_t scancode) {
     switch (scancode) {
         case 0x0:
@@ -202,15 +210,27 @@ void append(char *s, char n) {
 
 static char key_buffer[256];
 
-const char scancode_to_char[] = {
+const char scancode_to_char_low[] = {
   '?', '?', '1', '2', '3', '4', '5',
   '6', '7', '8', '9', '0', '-', '=',
+  '?', '?', 'q', 'w', 'e', 'r', 't',
+  'y', 'u', 'i', 'o', 'p', '?', '?',
+  '?', '?', 'a', 's', 'd', 'f', 'g',
+  'h', 'j', 'k', 'l', '?', '?', '\'',
+  '?', '<', 'z', 'x', 'c', 'v', 'b',
+  'n', 'm', ',', '.', '-', '?', '?',
+  '?', ' '
+};
+
+const char scancode_to_char_high[] = {
+  '?', '?', '!', '"', '#', '?', '%',
+  '&', '/', '(', ')', '=', '?', '`',
   '?', '?', 'Q', 'W', 'E', 'R', 'T',
-  'Y', 'U', 'I', 'O', 'P', '[', ']',
+  'Y', 'U', 'I', 'O', 'P', '?', '?',
   '?', '?', 'A', 'S', 'D', 'F', 'G',
-  'H', 'J', 'K', 'L', ';', '/', '`',
-  '?', '\\', 'Z', 'X', 'C', 'V', 'B',
-  'N', 'M', ',', '.', '/', '?', '?',
+  'H', 'J', 'K', 'L', '?', '?', '*',
+  '?', '>', 'Z', 'X', 'C', 'V', 'B',
+  'N', 'M', ';', ':', '_', '?', '?',
   '?', ' '
 };
 
@@ -228,11 +248,92 @@ bool backspace(char buffer[]) {
 }
 
 void print_backspace() {
-    vga_ram[terminal_row * VGA_WIDTH + --terminal_column] = ' ' | terminal_color;
+    terminal_column--;
+    vga_ram[terminal_row * VGA_WIDTH + terminal_column] = ' ' | terminal_color << 8;
     vga_set_cursor(get_offset(terminal_column, terminal_row));
 }
 
 #define BACKSPACE 0x0E
+#define ENTER 0x1C
+
+#define MOD_SHIFT 0x2A
+#define MOD_CTRL 0x1D
+#define MOD_ALT 0x38
+
+uint32_t strcmp(const char *s1, const char *s2) {
+    uint32_t i;
+    for (i = 0; s1[i] == s2[i]; i++) {
+        if (s1[i] == '\0') return 0;
+    }
+    return s1[i] - s2[i];
+}
+
+uint32_t strloc(const char *s1, const char c) {
+    uint32_t i;
+    for (i = 0; i < strlen(s1); i++) {
+        if (s1[i] == c) return i;
+    }
+    return 0;
+}
+
+void exec_cmd(const char *input) {
+    uint32_t idx = strloc(input, ' ');
+    char *cmd = (char*)input;
+    if (idx != 0) cmd[idx] = '\0';
+    char *arg = ((char*)input)+idx+1;
+
+    if (strcmp(cmd, "halt") == 0) {
+        print("Halting CPU. Hope to see you again!!\n");
+        asm volatile("hlt");
+    }
+    else if (strcmp(cmd, "os") == 0) {
+        print(LOGO);
+        print("You're on Dwarfstar OS\n");
+        print("Developed by: TheHerowither\n");
+    }
+    else if (strcmp(cmd, "clear") == 0) {
+        vga_clear();
+    }
+    else if (strcmp(cmd, "color") == 0) {
+        uint8_t fg = terminal_color & 0xFF;
+        uint8_t bg = (terminal_color >> 4) & 0xFF;
+        switch (*arg) {
+            case 'a':
+                fg = VGA_COLOR_GREEN;
+                break;
+            case 'b':
+                fg = VGA_COLOR_LIGHT_GRAY;
+                break;
+            case 'c':
+                fg = VGA_COLOR_BLACK;
+                break;
+            default:
+                break;
+        }
+        arg++;
+        switch (*arg) {
+            case 'a':
+                bg = VGA_COLOR_GREEN;
+                break;
+            case 'b':
+                bg = VGA_COLOR_LIGHT_GRAY;
+                break;
+            case 'c':
+                bg = VGA_COLOR_BLACK;
+                break;
+            default:
+                break;
+        }
+        terminal_color = fg | bg << 4;
+        vga_update_color();
+    }
+    else {
+        print("Unknown command: ");
+        print(cmd);
+        print("\n");
+    }
+    print("> ");
+}
 
 static void keyboard_callback(registers_t *regs) {
     uint8_t scancode = pinb(0x60);
@@ -242,10 +343,15 @@ static void keyboard_callback(registers_t *regs) {
     if (scancode == BACKSPACE) {
         if (backspace(key_buffer)) {
             print_backspace();
-        }
+       }
+    }
+    else if (scancode == ENTER) {
+        print("\n");
+        exec_cmd(key_buffer);
+        key_buffer[0] = '\0';
     }
     else {
-        char letter = scancode_to_char[(int) scancode];
+        char letter = scancode_to_char_low[(int) scancode];
         append(key_buffer, letter);
         char str[2] = {letter, '\0'};
         print(str);
